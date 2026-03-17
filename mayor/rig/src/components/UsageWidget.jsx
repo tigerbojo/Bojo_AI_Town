@@ -5,6 +5,10 @@ function fetchUsageData() {
   return fetch('/usage-data').then(r => r.json());
 }
 
+function fetchUsageReport() {
+  return fetch('/usage-report').then(r => r.json());
+}
+
 const MODEL_LABELS = {
   'claude-sonnet-4-6': 'Sonnet 4.6',
   'claude-opus-4-6': 'Opus 4.6',
@@ -36,6 +40,11 @@ function formatRelTime(ts) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h 前`;
   return `${Math.floor(h / 24)}d 前`;
+}
+
+function formatTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
 }
 
 function ClaudeModelBar({ entry, color, maxOutput }) {
@@ -84,8 +93,118 @@ function OpenClawBar({ m }) {
   );
 }
 
+function UsageReportModal({ onClose }) {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['usage-report'],
+    queryFn: fetchUsageReport,
+    staleTime: 0,
+  });
+
+  const models = data?.models ?? [];
+  const resetInMin = data?.resetInMin;
+  const resetAt = data?.resetAt;
+  const windowStart = data?.windowStart;
+
+  const resetLabel = resetInMin != null
+    ? resetInMin <= 0
+      ? '視窗已重置'
+      : resetInMin < 60
+        ? `${resetInMin} 分鐘後重置`
+        : `${Math.floor(resetInMin / 60)}h ${resetInMin % 60}m 後重置`
+    : '—';
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onClose}
+    >
+      <div
+        style={{ background: 'var(--card)', borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', width: '480px', maxWidth: '92vw', overflow: 'hidden' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--divider)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '18px' }}>📊</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text)' }}>Claude Code Max — 使用量報告</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>過去 5 小時視窗</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '16px 20px 20px' }}>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)', fontSize: '14px' }}>讀取中…</div>
+          ) : isError ? (
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--red)', fontSize: '14px' }}>讀取失敗</div>
+          ) : (
+            <>
+              {/* Reset time banner */}
+              <div style={{ background: resetInMin != null && resetInMin <= 30 ? 'var(--orange-light)' : 'var(--bg)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>視窗開始</div>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>{formatTime(windowStart)}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>下次重置</div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: resetInMin != null && resetInMin <= 30 ? 'var(--orange)' : 'var(--green)' }}>
+                    {formatTime(resetAt)} （{resetLabel}）
+                  </div>
+                </div>
+              </div>
+
+              {/* Per-model rows */}
+              {models.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)', fontSize: '13px' }}>此視窗無使用記錄</div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr>
+                      {['模型', 'Output', 'Cache Read', 'Cache Write', 'Calls'].map(h => (
+                        <th key={h} style={{ textAlign: h === '模型' ? 'left' : 'right', padding: '6px 8px', fontSize: '11px', fontWeight: '600', color: 'var(--text-secondary)', borderBottom: '1px solid var(--divider)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {models.sort((a, b) => b.output - a.output).map(m => (
+                      <tr key={m.model}>
+                        <td style={{ padding: '9px 8px', borderBottom: '1px solid var(--divider)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: MODEL_COLORS[m.model] ?? '#888', flexShrink: 0 }} />
+                            <span style={{ fontWeight: '600', color: 'var(--text)' }}>{MODEL_LABELS[m.model] ?? m.model}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '9px 8px', textAlign: 'right', borderBottom: '1px solid var(--divider)', fontWeight: '600', color: 'var(--text)' }}>{fmt(m.output)}</td>
+                        <td style={{ padding: '9px 8px', textAlign: 'right', borderBottom: '1px solid var(--divider)', color: 'var(--text-secondary)' }}>{fmt(m.cacheRead)}</td>
+                        <td style={{ padding: '9px 8px', textAlign: 'right', borderBottom: '1px solid var(--divider)', color: 'var(--text-secondary)' }}>{fmt(m.cacheWrite)}</td>
+                        <td style={{ padding: '9px 8px', textAlign: 'right', borderBottom: '1px solid var(--divider)', color: 'var(--text-secondary)' }}>{m.calls.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              <div style={{ marginTop: '14px', textAlign: 'right' }}>
+                <button
+                  onClick={() => refetch()}
+                  style={{ fontSize: '12px', color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+                >
+                  重新整理
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UsageWidget() {
-  const [window, setWindow] = useState('5h');
+  const [timeWindow, setTimeWindow] = useState('5h');
+  const [showReport, setShowReport] = useState(false);
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['usage'],
     queryFn: fetchUsageData,
@@ -95,7 +214,7 @@ export default function UsageWidget() {
 
   if (isError) return null;
 
-  const claudeModels = (data?.claude?.[window] ?? [])
+  const claudeModels = (data?.claude?.[timeWindow] ?? [])
     .filter(m => m.calls > 0)
     .sort((a, b) => b.output - a.output);
 
@@ -130,6 +249,14 @@ export default function UsageWidget() {
         <h2 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', margin: 0, letterSpacing: '-0.01em', flex: 1 }}>
           AI 使用量
         </h2>
+        <button
+          onClick={() => setShowReport(true)}
+          style={{ fontSize: '12px', fontWeight: '600', padding: '5px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'var(--blue)', color: '#fff', transition: 'opacity 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
+          /usage
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -140,7 +267,7 @@ export default function UsageWidget() {
             <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', gap: '2px', background: 'var(--bg)', borderRadius: '8px', padding: '2px' }}>
               {['5h', '24h'].map(w => (
-                <button key={w} style={tabBtn(window === w)} onClick={() => setWindow(w)}>{w}</button>
+                <button key={w} style={tabBtn(timeWindow === w)} onClick={() => setTimeWindow(w)}>{w}</button>
               ))}
             </div>
           </div>
@@ -187,6 +314,8 @@ export default function UsageWidget() {
           </div>
         )}
       </div>
+
+      {showReport && <UsageReportModal onClose={() => setShowReport(false)} />}
     </section>
   );
 }

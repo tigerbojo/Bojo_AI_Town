@@ -94,6 +94,63 @@ function readOpenClawUsage() {
   } catch { return [] }
 }
 
+function buildUsageReport() {
+  const projectsDir = path.join(os.homedir(), '.claude/projects')
+  const now = Date.now()
+  const window5h = now - 5 * 3600 * 1000
+
+  let files = []
+  try {
+    for (const proj of fs.readdirSync(projectsDir)) {
+      const projDir = path.join(projectsDir, proj)
+      try {
+        for (const f of fs.readdirSync(projDir)) {
+          if (f.endsWith('.jsonl')) files.push(path.join(projDir, f))
+        }
+      } catch {}
+    }
+  } catch {}
+
+  const byModel = {}
+  let earliestIn5h = now
+
+  for (const filepath of files) {
+    let content
+    try { content = fs.readFileSync(filepath, 'utf-8') } catch { continue }
+    for (const line of content.split('\n')) {
+      if (!line.trim()) continue
+      let d
+      try { d = JSON.parse(line) } catch { continue }
+      const ts = d.timestamp
+      if (!ts) continue
+      const t = new Date(ts).getTime()
+      if (isNaN(t) || t < window5h) continue
+
+      const msg = d.message
+      if (!msg || typeof msg !== 'object' || msg.role !== 'assistant') continue
+      const usage = msg.usage
+      const model = msg.model
+      if (!usage || !model || model === '<synthetic>') continue
+
+      if (t < earliestIn5h) earliestIn5h = t
+
+      if (!byModel[model]) byModel[model] = { model, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, calls: 0 }
+      const m = byModel[model]
+      m.input += usage.input_tokens || 0
+      m.output += usage.output_tokens || 0
+      m.cacheRead += usage.cache_read_input_tokens || 0
+      m.cacheWrite += usage.cache_creation_input_tokens || 0
+      m.calls += 1
+    }
+  }
+
+  const resetAt = earliestIn5h + 5 * 3600 * 1000
+  const resetInMs = resetAt - now
+  const resetInMin = Math.round(resetInMs / 60000)
+
+  return { models: Object.values(byModel), windowStart: earliestIn5h, resetAt, resetInMin }
+}
+
 function usageDataPlugin() {
   return {
     name: 'usage-data',
@@ -104,6 +161,15 @@ function usageDataPlugin() {
           const openclawModels = readOpenClawUsage()
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify({ claude: claudeUsage, openclaw: openclawModels }))
+        } catch (err) {
+          res.statusCode = 500
+          res.end(JSON.stringify({ error: err.message }))
+        }
+      })
+      server.middlewares.use('/usage-report', (req, res) => {
+        try {
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify(buildUsageReport()))
         } catch (err) {
           res.statusCode = 500
           res.end(JSON.stringify({ error: err.message }))
