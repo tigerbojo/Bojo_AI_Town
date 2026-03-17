@@ -1,102 +1,67 @@
-import { useState } from 'react';
-
-const sectionStyle = {};
-
 const cardStyle = {
   background: 'var(--card)',
   borderRadius: 'var(--radius-md)',
   border: '1px solid var(--border)',
-  boxShadow: 'var(--shadow-sm)',
   overflow: 'hidden',
 };
 
 const headerStyle = {
-  padding: '18px 20px 14px',
+  padding: '14px 16px 12px',
   borderBottom: '1px solid var(--divider)',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-};
-
-const tableStyle = {
-  width: '100%',
-  borderCollapse: 'collapse',
+  display: 'flex', alignItems: 'center', gap: '8px',
 };
 
 const thStyle = {
-  padding: '10px 16px',
+  padding: '8px 14px',
   textAlign: 'left',
-  fontSize: '11px',
-  fontWeight: '600',
-  color: 'var(--text-secondary)',
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase',
-  background: 'var(--bg)',
+  fontSize: '10px', fontWeight: '700',
+  color: 'var(--text-tertiary)',
+  letterSpacing: '0.08em', textTransform: 'uppercase',
+  background: 'rgba(255,255,255,0.02)',
   borderBottom: '1px solid var(--divider)',
+  fontFamily: 'var(--font-mono)',
 };
 
 const tdStyle = {
-  padding: '12px 16px',
-  fontSize: '14px',
-  color: 'var(--text)',
+  padding: '10px 14px',
+  fontSize: '13px', color: 'var(--text)',
   borderBottom: '1px solid var(--divider)',
   verticalAlign: 'middle',
 };
 
-const nameStyle = {
-  fontWeight: '600',
-  color: 'var(--text)',
-  fontSize: '14px',
-  fontFamily: 'var(--font-mono)',
-};
-
-const emptyStyle = {
-  padding: '40px',
-  textAlign: 'center',
-  color: 'var(--text-secondary)',
-  fontSize: '14px',
-};
-
 function getTypeBadge(type) {
   if (!type) return null;
-  const lower = type.toLowerCase();
-  if (lower === 'polecat' || lower.includes('worker') || lower.includes('工人')) return { label: '工人', cls: 'blue' };
-  if (lower === 'refinery' || lower.includes('refiner') || lower.includes('精煉')) return { label: '精煉廠', cls: 'purple' };
-  if (lower === 'witness' || lower.includes('見證')) return { label: '見證者', cls: 'orange' };
-  if (lower === 'mayor' || lower.includes('市長')) return { label: '市長', cls: 'green' };
-  if (lower === 'deacon' || lower.includes('執事')) return { label: '執事', cls: 'gray' };
+  const l = type.toLowerCase();
+  if (l === 'polecat' || l.includes('worker')) return { label: 'worker', cls: 'blue' };
+  if (l === 'refinery') return { label: 'refinery', cls: 'purple' };
+  if (l === 'witness') return { label: 'witness', cls: 'orange' };
+  if (l === 'mayor') return { label: 'mayor', cls: 'green' };
   return { label: type, cls: 'gray' };
 }
 
-function getActivityDotCls(activityColor) {
-  if (!activityColor) return 'gray';
-  if (activityColor.includes('green')) return 'green pulse';
-  if (activityColor.includes('yellow')) return 'yellow';
-  if (activityColor.includes('red')) return 'red';
-  return 'gray';
+function getStatusInfo(status) {
+  if (!status) return { label: 'idle', cls: 'gray', dotCls: 'gray' };
+  const l = status.toLowerCase();
+  if (l.includes('work') || l.includes('active')) return { label: 'working', cls: 'green', dotCls: 'green' };
+  if (l.includes('idle') || l.includes('閒置')) return { label: 'idle', cls: 'gray', dotCls: 'gray' };
+  if (l.includes('error') || l.includes('fail')) return { label: 'error', cls: 'red', dotCls: 'red' };
+  return { label: status, cls: 'gray', dotCls: 'gray' };
 }
 
-function getStatusInfo(status) {
-  if (!status) return { label: '未知', cls: 'gray', dotCls: 'gray' };
-  const lower = status.toLowerCase();
-  if (lower.includes('work') || lower.includes('active') || lower.includes('工作') || lower.includes('運行')) {
-    return { label: '工作中', cls: 'green', dotCls: 'green' };
-  }
-  if (lower.includes('idle') || lower.includes('閒置') || lower.includes('等待')) {
-    return { label: '閒置', cls: 'gray', dotCls: 'gray' };
-  }
-  if (lower.includes('error') || lower.includes('fail') || lower.includes('錯誤')) {
-    return { label: '錯誤', cls: 'red', dotCls: 'red' };
-  }
-  return { label: status, cls: 'gray', dotCls: 'gray' };
+function getActivityDotCls(c) {
+  if (!c) return 'gray';
+  if (c.includes('green')) return 'green pulse';
+  if (c.includes('yellow')) return 'yellow';
+  if (c.includes('red')) return 'red';
+  return 'gray';
 }
 
 function SkeletonRow() {
   return (
     <tr>
-      {[140, 70, 120, 180, 80, 100].map((w, i) => (
+      {[120, 60, 100, 160, 70, 90].map((w, i) => (
         <td key={i} style={tdStyle}>
-          <div className="skeleton" style={{ height: '16px', width: `${w}px`, borderRadius: '4px' }} />
+          <div className="skeleton" style={{ height: '13px', width: `${w}px`, borderRadius: '3px' }} />
         </td>
       ))}
     </tr>
@@ -104,8 +69,6 @@ function SkeletonRow() {
 }
 
 export default function PolecatsPanel({ polecats, isLoading }) {
-  const [collapsed, setCollapsed] = useState(false);
-
   const typeBadge = (type) => {
     const info = getTypeBadge(type);
     if (!info) return <span style={{ color: 'var(--text-tertiary)' }}>—</span>;
@@ -123,36 +86,22 @@ export default function PolecatsPanel({ polecats, isLoading }) {
   };
 
   return (
-    <section style={sectionStyle}>
+    <section>
       <div style={cardStyle}>
         <div style={headerStyle}>
-          <span style={{ fontSize: '18px' }}>👷</span>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', margin: 0, letterSpacing: '-0.01em' }}>
-              工人節點
-            </h2>
-            {!isLoading && polecats != null && (
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                共 {polecats.length} 個節點
-              </p>
-            )}
-          </div>
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '6px', transition: 'background var(--transition-fast)' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-            title={collapsed ? '展開' : '收合'}
-          >
-            {collapsed ? '▶' : '▼'}
-          </button>
+          <span style={{ fontSize: '14px' }}>👷</span>
+          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>polecats</span>
+          {!isLoading && polecats != null && (
+            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginLeft: '4px', fontFamily: 'var(--font-mono)' }}>
+              [{polecats.length}]
+            </span>
+          )}
         </div>
-
-        <div style={{ overflowX: 'auto', display: collapsed ? 'none' : 'block' }}>
-          <table style={tableStyle}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['名稱', '類型', '工程', '當前任務', '狀態', '最後活動'].map(h => (
+                {['name', 'type', 'rig', 'task', 'status', 'activity'].map(h => (
                   <th key={h} style={thStyle}>{h}</th>
                 ))}
               </tr>
@@ -160,34 +109,31 @@ export default function PolecatsPanel({ polecats, isLoading }) {
             <tbody>
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
-              ) : polecats?.length === 0 || !polecats ? (
+              ) : !polecats?.length ? (
                 <tr>
-                  <td colSpan={6} style={emptyStyle}>
-                    暫無工人節點資料
+                  <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: 'var(--text-tertiary)', padding: '32px', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                    no polecats
                   </td>
                 </tr>
               ) : (
                 polecats.map((p, i) => (
-                  <tr
-                    key={i}
+                  <tr key={i}
                     style={{ transition: 'background var(--transition-fast)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <td style={tdStyle}>
-                      <span style={nameStyle}>{p.name}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: '600', color: 'var(--text)' }}>{p.name}</span>
                     </td>
                     <td style={tdStyle}>{typeBadge(p.type)}</td>
-                    <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px' }}>
-                      {p.rig ?? '—'}
-                    </td>
-                    <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '240px' }}>
-                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...tdStyle, color: 'var(--text-tertiary)', fontSize: '12px', fontFamily: 'var(--font-mono)' }}>{p.rig ?? '—'}</td>
+                    <td style={{ ...tdStyle, maxWidth: '220px' }}>
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', color: 'var(--text-secondary)' }}>
                         {p.issue ?? '—'}
                       </span>
                     </td>
                     <td style={tdStyle}>{statusBadge(p.status)}</td>
-                    <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                    <td style={{ ...tdStyle, fontSize: '12px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <span className={`dot ${getActivityDotCls(p.activityColor)}`} />
                         {p.activity ?? '—'}

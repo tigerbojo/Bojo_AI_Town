@@ -1,93 +1,44 @@
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-  gap: '12px',
-};
-
-const cardStyle = {
-  background: 'var(--card)',
-  borderRadius: 'var(--radius-md)',
-  border: '1px solid var(--border)',
-  boxShadow: 'var(--shadow-sm)',
-  padding: '18px 20px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  transition: 'box-shadow var(--transition)',
-  cursor: 'default',
-};
-
-const valueStyle = {
-  fontSize: '32px',
-  fontWeight: '700',
-  letterSpacing: '-0.03em',
-  lineHeight: 1,
-  fontVariantNumeric: 'tabular-nums',
-};
-
-const labelStyle = {
-  fontSize: '12px',
-  fontWeight: '500',
-  color: 'var(--text-secondary)',
-  letterSpacing: '0.01em',
-};
-
-const iconStyle = {
-  fontSize: '18px',
-  marginBottom: '4px',
-};
-
-function getColor(key, value) {
-  const v = parseInt(value, 10);
-  if (key === 'escalations' || key === 'alerts') {
-    return v > 0 ? 'var(--red)' : 'var(--text-secondary)';
-  }
-  if (key === 'polecats') return 'var(--blue)';
-  if (key === 'work') return v > 0 ? 'var(--green)' : 'var(--text-secondary)';
-  if (key === 'convoys') return v > 0 ? 'var(--orange)' : 'var(--text-secondary)';
-  return 'var(--text)';
-}
-
 const STAT_CONFIG = [
-  { key: 'polecats', label: '工人數', icon: '👷' },
-  { key: 'hooks', label: '掛鉤', icon: '🔗' },
-  { key: 'work', label: '進行中', icon: '⚙️' },
-  { key: 'convoys', label: '車隊', icon: '🚛' },
-  { key: 'escalations', label: '待處理', icon: '⚡️' },
-  { key: 'alerts', label: '警報', icon: '🚨' },
+  { key: 'polecats',    label: 'Polecats',  icon: '👷', color: (v) => '#60a5fa' },
+  { key: 'hooks',       label: 'Hooks',     icon: '🔗', color: (v) => v > 0 ? '#a78bfa' : 'var(--text-secondary)' },
+  { key: 'work',        label: 'Work',      icon: '⚙', color: (v) => v > 0 ? 'var(--green)' : 'var(--text-secondary)' },
+  { key: 'convoys',     label: 'Convoys',   icon: '🚛', color: (v) => v > 0 ? 'var(--orange)' : 'var(--text-secondary)' },
+  { key: 'escalations', label: 'Alerts',    icon: '⚡', color: (v) => v > 0 ? 'var(--red)' : 'var(--text-secondary)' },
 ];
 
 function StatCard({ icon, label, value, color, isLoading }) {
   if (isLoading) {
     return (
-      <div style={cardStyle}>
-        <div className="skeleton" style={{ width: '24px', height: '24px', borderRadius: '6px', marginBottom: '6px' }} />
-        <div className="skeleton" style={{ width: '60px', height: '36px', borderRadius: '6px' }} />
-        <div className="skeleton" style={{ width: '80px', height: '14px', borderRadius: '4px', marginTop: '4px' }} />
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '14px 16px' }}>
+        <div className="skeleton" style={{ width: '20px', height: '20px', borderRadius: '4px', marginBottom: '8px' }} />
+        <div className="skeleton" style={{ height: '28px', width: '48px', marginBottom: '4px' }} />
+        <div className="skeleton" style={{ height: '11px', width: '60px' }} />
       </div>
     );
   }
 
-  const display = value != null ? String(value) : '—';
-
+  const v = parseInt(value, 10) || 0;
   return (
-    <div
-      style={cardStyle}
-      onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow-md)'}
-      onMouseLeave={e => e.currentTarget.style.boxShadow = 'var(--shadow-sm)'}
+    <div style={{
+      background: 'var(--card)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)', padding: '14px 16px',
+      transition: 'border-color var(--transition)',
+    }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
-      <span style={iconStyle}>{icon}</span>
-      <span style={{ ...valueStyle, color: color }}>{display}</span>
-      <span style={labelStyle}>{label}</span>
+      <div style={{ fontSize: '16px', marginBottom: '6px' }}>{icon}</div>
+      <div style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.04em', lineHeight: 1, color, fontVariantNumeric: 'tabular-nums', marginBottom: '4px' }}>
+        {value != null ? String(value) : '—'}
+      </div>
+      <div style={{ fontSize: '11px', fontWeight: '500', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        {label}
+      </div>
     </div>
   );
 }
 
-import { useState } from 'react';
-
 export default function SummaryStats({ summary, isLoading }) {
-  const [collapsed, setCollapsed] = useState(false);
-
   const getValue = (key) => {
     if (!summary) return null;
     if (key === 'alerts') return summary.alerts?.length ?? 0;
@@ -96,48 +47,19 @@ export default function SummaryStats({ summary, isLoading }) {
 
   return (
     <section>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: collapsed ? 0 : '14px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', margin: 0, letterSpacing: '-0.01em', flex: 1 }}>
-          系統概覽
-        </h2>
-        <button
-          onClick={() => setCollapsed(c => !c)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '6px', transition: 'background var(--transition-fast)' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          title={collapsed ? '展開' : '收合'}
-        >
-          {collapsed ? '▶' : '▼'}
-        </button>
-      </div>
-      {!collapsed && summary?.noHeartbeat && !isLoading && (
-        <div style={{ background: 'var(--red-light)', border: '1px solid rgba(255,59,48,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', fontSize: '13px', color: '#c0392b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {summary?.noHeartbeat && !isLoading && (
+        <div style={{ background: 'var(--red-light)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-sm)', padding: '7px 12px', fontSize: '12px', color: '#f87171', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           💔 無心跳訊號
         </div>
       )}
-      {!collapsed && summary?.alerts?.length > 0 && !isLoading && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
-          {summary.alerts.map((a, i) => (
-            <span key={i} style={{ background: 'var(--orange-light, rgba(255,149,0,0.12))', border: '1px solid rgba(255,149,0,0.3)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', fontSize: '12px', color: 'var(--orange, #ff9500)' }}>
-              {a}
-            </span>
-          ))}
-        </div>
-      )}
-      {!collapsed && (
-        <div style={gridStyle}>
-          {STAT_CONFIG.map(({ key, label, icon }) => (
-            <StatCard
-              key={key}
-              icon={icon}
-              label={label}
-              value={getValue(key)}
-              color={getColor(key, getValue(key))}
-              isLoading={isLoading}
-            />
-          ))}
-        </div>
-      )}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+        {STAT_CONFIG.map(({ key, label, icon, color }) => {
+          const v = getValue(key);
+          return (
+            <StatCard key={key} icon={icon} label={label} value={v} color={color(parseInt(v, 10) || 0)} isLoading={isLoading} />
+          );
+        })}
+      </div>
     </section>
   );
 }
