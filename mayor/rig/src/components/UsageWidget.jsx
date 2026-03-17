@@ -38,22 +38,27 @@ function formatRelTime(ts) {
   return `${Math.floor(h / 24)}d 前`;
 }
 
-function ClaudeModelRow({ entry, color }) {
+function ClaudeModelBar({ entry, color, maxOutput }) {
   const label = MODEL_LABELS[entry.model] ?? entry.model;
-  // output tokens are the most meaningful for "work done"
-  const total = entry.output + entry.cacheRead;
+  const pct = maxOutput > 0 ? Math.round((entry.output / maxOutput) * 100) : 0;
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 0', borderBottom: '1px solid var(--divider)' }}>
-      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>{label}</div>
+    <div style={{ padding: '8px 0', borderBottom: '1px solid var(--divider)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, flexShrink: 0 }} />
+          <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>{label}</span>
+        </div>
+        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+          <span style={{ color: 'var(--text)', fontWeight: '600' }}>{fmt(entry.output)}</span>
+          {' out · '}
+          {fmt(entry.cacheRead)} cache
+          {' · '}
+          {entry.calls} calls
+        </div>
       </div>
-      <div style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-        <span style={{ color: 'var(--text)', fontWeight: '500' }}>{fmt(entry.output)}</span> out
-        {' · '}
-        <span>{fmt(entry.cacheRead)}</span> cache
-        {' · '}
-        <span>{entry.calls}</span> calls
+      <div style={{ height: '5px', background: 'var(--bg-secondary, #e8e8ed)', borderRadius: '3px', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '3px', transition: 'width 0.4s ease', opacity: 0.85 }} />
       </div>
     </div>
   );
@@ -155,7 +160,12 @@ export default function UsageWidget() {
           ) : (
             <>
               {claudeModels.map(m => (
-                <ClaudeModelRow key={m.model} entry={m} color={MODEL_COLORS[m.model] ?? '#888'} />
+                <ClaudeModelBar
+                  key={m.model}
+                  entry={m}
+                  color={MODEL_COLORS[m.model] ?? '#888'}
+                  maxOutput={claudeModels[0]?.output ?? 1}
+                />
               ))}
               <div style={{ marginTop: '10px', fontSize: '11px', color: 'var(--text-tertiary)', textAlign: 'right' }}>
                 共 {claudeModels.reduce((s, m) => s + m.calls, 0).toLocaleString()} 次 API 呼叫
