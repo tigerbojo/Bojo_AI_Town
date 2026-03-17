@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
