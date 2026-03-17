@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import os from 'os'
 import fs from 'fs'
 import path from 'path'
+import { execSync, spawn } from 'child_process'
 
 function readClaudeUsage() {
   const projectsDir = path.join(os.homedir(), '.claude/projects')
@@ -165,6 +166,45 @@ function usageDataPlugin() {
           res.statusCode = 500
           res.end(JSON.stringify({ error: err.message }))
         }
+      })
+      server.middlewares.use('/claude-chat', (req, res) => {
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(); return }
+        let body = ''
+        req.on('data', chunk => body += chunk)
+        req.on('end', () => {
+          try {
+            const { messages } = JSON.parse(body)
+
+            // Format conversation history as a single prompt for --print mode
+            const prompt = messages.slice(0, -1).map(m =>
+              `${m.role === 'user' ? 'Human' : 'Assistant'}: ${m.content}`
+            ).join('\n') + (messages.length > 1 ? '\n' : '') +
+            messages[messages.length - 1].content
+
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+            res.setHeader('Transfer-Encoding', 'chunked')
+            res.setHeader('Cache-Control', 'no-cache')
+
+            const claudeBin = execSync('which claude', { encoding: 'utf-8' }).trim()
+            const child = spawn(claudeBin, ['--print', '--model', 'claude-sonnet-4-6'], {
+              cwd: '/tmp',
+              env: { ...process.env, HOME: process.env.HOME },
+            })
+
+            child.stdin.write(prompt)
+            child.stdin.end()
+
+            child.stdout.on('data', chunk => res.write(chunk))
+            child.stderr.on('data', () => {}) // suppress stderr
+            child.on('close', () => res.end())
+            child.on('error', err => { res.write(`\n❌ ${err.message}`); res.end() })
+
+            res.on('close', () => child.kill())
+          } catch (err) {
+            res.statusCode = 400
+            res.end(JSON.stringify({ error: err.message }))
+          }
+        })
       })
       server.middlewares.use('/usage-report', (req, res) => {
         try {
