@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const sectionStyle = {};
 
 const cardStyle = {
@@ -102,6 +104,8 @@ function SkeletonRow() {
 }
 
 export default function PolecatsPanel({ polecats, isLoading }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   const typeBadge = (type) => {
     const info = getTypeBadge(type);
     if (!info) return <span style={{ color: 'var(--text-tertiary)' }}>—</span>;
@@ -123,7 +127,7 @@ export default function PolecatsPanel({ polecats, isLoading }) {
       <div style={cardStyle}>
         <div style={headerStyle}>
           <span style={{ fontSize: '18px' }}>👷</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', margin: 0, letterSpacing: '-0.01em' }}>
               工人節點
             </h2>
@@ -133,9 +137,18 @@ export default function PolecatsPanel({ polecats, isLoading }) {
               </p>
             )}
           </div>
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '6px', transition: 'background var(--transition-fast)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            title={collapsed ? '展開' : '收合'}
+          >
+            {collapsed ? '▶' : '▼'}
+          </button>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', display: collapsed ? 'none' : 'block' }}>
           <table style={tableStyle}>
             <thead>
               <tr>

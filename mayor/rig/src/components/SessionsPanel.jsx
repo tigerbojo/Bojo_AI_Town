@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const cardStyle = {
   background: 'var(--card)',
   borderRadius: 'var(--radius-md)',
@@ -78,12 +80,14 @@ function getRoleBadge(role) {
 }
 
 export default function SessionsPanel({ sessions, isLoading }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <section>
       <div style={cardStyle}>
         <div style={headerStyle}>
           <span style={{ fontSize: '18px' }}>🖥</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', margin: 0, letterSpacing: '-0.01em' }}>
               會話列表
             </h2>
@@ -93,9 +97,18 @@ export default function SessionsPanel({ sessions, isLoading }) {
               </p>
             )}
           </div>
+          <button
+            onClick={() => setCollapsed(c => !c)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '6px', transition: 'background var(--transition-fast)' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            title={collapsed ? '展開' : '收合'}
+          >
+            {collapsed ? '▶' : '▼'}
+          </button>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', display: collapsed ? 'none' : 'block' }}>
           <table style={tableStyle}>
             <thead>
               <tr>

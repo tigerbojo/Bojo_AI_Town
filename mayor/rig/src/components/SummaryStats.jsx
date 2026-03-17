@@ -83,7 +83,11 @@ function StatCard({ icon, label, value, color, isLoading }) {
   );
 }
 
+import { useState } from 'react';
+
 export default function SummaryStats({ summary, isLoading }) {
+  const [collapsed, setCollapsed] = useState(false);
+
   const getValue = (key) => {
     if (!summary) return null;
     if (key === 'alerts') return summary.alerts?.length ?? 0;
@@ -92,15 +96,26 @@ export default function SummaryStats({ summary, isLoading }) {
 
   return (
     <section>
-      <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', margin: '0 0 14px 0', letterSpacing: '-0.01em' }}>
-        系統概覽
-      </h2>
-      {summary?.noHeartbeat && !isLoading && (
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: collapsed ? 0 : '14px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text)', margin: 0, letterSpacing: '-0.01em', flex: 1 }}>
+          系統概覽
+        </h2>
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '6px', transition: 'background var(--transition-fast)' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          title={collapsed ? '展開' : '收合'}
+        >
+          {collapsed ? '▶' : '▼'}
+        </button>
+      </div>
+      {!collapsed && summary?.noHeartbeat && !isLoading && (
         <div style={{ background: 'var(--red-light)', border: '1px solid rgba(255,59,48,0.2)', borderRadius: 'var(--radius-sm)', padding: '8px 14px', fontSize: '13px', color: '#c0392b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           💔 無心跳訊號
         </div>
       )}
-      {summary?.alerts?.length > 0 && !isLoading && (
+      {!collapsed && summary?.alerts?.length > 0 && !isLoading && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
           {summary.alerts.map((a, i) => (
             <span key={i} style={{ background: 'var(--orange-light, rgba(255,149,0,0.12))', border: '1px solid rgba(255,149,0,0.3)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', fontSize: '12px', color: 'var(--orange, #ff9500)' }}>
@@ -109,18 +124,20 @@ export default function SummaryStats({ summary, isLoading }) {
           ))}
         </div>
       )}
-      <div style={gridStyle}>
-        {STAT_CONFIG.map(({ key, label, icon }) => (
-          <StatCard
-            key={key}
-            icon={icon}
-            label={label}
-            value={getValue(key)}
-            color={getColor(key, getValue(key))}
-            isLoading={isLoading}
-          />
-        ))}
-      </div>
+      {!collapsed && (
+        <div style={gridStyle}>
+          {STAT_CONFIG.map(({ key, label, icon }) => (
+            <StatCard
+              key={key}
+              icon={icon}
+              label={label}
+              value={getValue(key)}
+              color={getColor(key, getValue(key))}
+              isLoading={isLoading}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

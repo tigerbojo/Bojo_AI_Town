@@ -27,6 +27,7 @@ const mainStyle = {
   maxWidth: '1200px',
   margin: '0 auto',
   padding: '28px 24px 48px',
+  paddingBottom: '80px',
   display: 'flex',
   flexDirection: 'column',
   gap: '24px',
