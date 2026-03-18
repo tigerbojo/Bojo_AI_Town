@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 const sectionStyle = {};
 
 const cardStyle = {
@@ -101,7 +103,26 @@ function SkeletonRow() {
   );
 }
 
+// 取 rig 名稱縮寫，e.g. TaiwanPeaks → tp, gastownui → gui
+function rigPrefix(rig) {
+  if (!rig) return '';
+  return rig.replace(/([A-Z])/g, m => m.toLowerCase()).replace(/[aeiou]/g, '').slice(0, 3)
+    || rig.slice(0, 2).toLowerCase();
+}
+
+function usePulse() {
+  const [pulse, setPulse] = useState({});
+  useEffect(() => {
+    const fetch_ = () => fetch('/polecat-pulse').then(r => r.json()).then(setPulse).catch(() => {});
+    fetch_();
+    const id = setInterval(fetch_, 3000);
+    return () => clearInterval(id);
+  }, []);
+  return pulse;
+}
+
 export default function PolecatsPanel({ polecats, isLoading }) {
+  const pulse = usePulse();
   const typeBadge = (type) => {
     const info = getTypeBadge(type);
     if (!info) return <span style={{ color: 'var(--text-tertiary)' }}>—</span>;
@@ -154,34 +175,63 @@ export default function PolecatsPanel({ polecats, isLoading }) {
                   </td>
                 </tr>
               ) : (
-                polecats.map((p, i) => (
-                  <tr
-                    key={i}
-                    style={{ transition: 'background var(--transition-fast)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={tdStyle}>
-                      <span style={nameStyle}>{p.name}</span>
-                    </td>
-                    <td style={tdStyle}>{typeBadge(p.type)}</td>
-                    <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px' }}>
-                      {p.rig ?? '—'}
-                    </td>
-                    <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '240px' }}>
-                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p.issue ?? '—'}
-                      </span>
-                    </td>
-                    <td style={tdStyle}>{statusBadge(p.status)}</td>
-                    <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px', whiteSpace: 'nowrap' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <span className={`dot ${getActivityDotCls(p.activityColor)}`} />
-                        {p.activity ?? '—'}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                polecats.map((p, i) => {
+                  const prefix = rigPrefix(p.rig);
+                  const sessionKey = p.name ? `${prefix}-${p.name}` : null;
+                  const lastLine = sessionKey ? pulse[sessionKey] : null;
+                  return (
+                    <>
+                      <tr
+                        key={i}
+                        style={{ transition: 'background var(--transition-fast)' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={tdStyle}>
+                          <span style={nameStyle}>{p.name}</span>
+                        </td>
+                        <td style={tdStyle}>{typeBadge(p.type)}</td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px' }}>
+                          {p.rig ?? '—'}
+                        </td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px', maxWidth: '240px' }}>
+                          <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {p.issue ?? '—'}
+                          </span>
+                        </td>
+                        <td style={tdStyle}>{statusBadge(p.status)}</td>
+                        <td style={{ ...tdStyle, color: 'var(--text-secondary)', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <span className={`dot ${getActivityDotCls(p.activityColor)}`} />
+                            {p.activity ?? '—'}
+                          </span>
+                        </td>
+                      </tr>
+                      {lastLine && (
+                        <tr key={`${i}-pulse`} style={{ background: 'var(--bg)' }}>
+                          <td colSpan={6} style={{ padding: '0 16px 8px 20px' }}>
+                            <span style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '11px',
+                              color: 'var(--green)',
+                              opacity: 0.75,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              <span style={{ opacity: 0.5 }}>$</span>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{lastLine}</span>
+                              <span style={{ animation: 'blink 1s step-end infinite', flexShrink: 0 }}>▌</span>
+                            </span>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })
               )}
             </tbody>
           </table>

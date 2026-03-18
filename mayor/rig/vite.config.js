@@ -106,8 +106,38 @@ function alertDetailPlugin() {
   };
 }
 
+function polecatPulsePlugin() {
+  return {
+    name: 'polecat-pulse',
+    configureServer(server) {
+      server.middlewares.use('/polecat-pulse', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        const env = { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin' };
+        try {
+          const sessions = execSync('tmux -L default list-sessions -F "#{session_name}" 2>/dev/null || true', { timeout: 3000, env })
+            .toString().trim().split('\n').filter(Boolean);
+
+          const pulse = {};
+          for (const name of sessions) {
+            try {
+              const raw = execSync(`tmux -L default capture-pane -t ${name} -p 2>/dev/null || true`, { timeout: 2000, env }).toString();
+              // Strip ANSI codes, grab last meaningful line
+              const clean = raw.replace(/\x1b\[[0-9;]*[mGKHF]/g, '').replace(/[^\x20-\x7E\u4e00-\u9fff\u3000-\u303f]/g, ' ');
+              const lines = clean.split('\n').map(l => l.trim()).filter(l => l.length > 2 && !/^[─━═╌]+$/.test(l) && !/^❯\s*$/.test(l));
+              pulse[name] = lines[lines.length - 1] ?? '';
+            } catch { pulse[name] = ''; }
+          }
+          res.end(JSON.stringify(pulse));
+        } catch (e) {
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), usagePlugin(), claudeUsagePlugin(), alertDetailPlugin()],
+  plugins: [react(), usagePlugin(), claudeUsagePlugin(), alertDetailPlugin(), polecatPulsePlugin()],
   server: {
     port: 8081,
     proxy: {
