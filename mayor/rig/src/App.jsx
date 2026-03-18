@@ -3,6 +3,7 @@ import { fetchDashboardData } from './lib/api';
 import Layout from './components/Layout';
 import MayorBanner from './components/MayorBanner';
 import SummaryStats from './components/SummaryStats';
+import UsageWidget from './components/UsageWidget';
 import PolecatsPanel from './components/PolecatsPanel';
 import SessionsPanel from './components/SessionsPanel';
 import './styles/design-system.css';
@@ -44,6 +45,7 @@ export default function App() {
 
       <MayorBanner mayor={data?.mayor} isLoading={isLoading} />
       <SummaryStats summary={data?.summary} isLoading={isLoading} />
+      <UsageWidget />
       <PolecatsPanel polecats={data?.polecats} isLoading={isLoading} />
       <SessionsPanel sessions={data?.sessions} isLoading={isLoading} />
     </Layout>

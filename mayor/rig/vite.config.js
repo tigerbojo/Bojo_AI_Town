@@ -1,6 +1,57 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
+
+function usagePlugin() {
+  return {
+    name: 'usage-data',
+    configureServer(server) {
+      server.middlewares.use('/usage-data', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        try {
+          const hoursParam = new URL(req.url, 'http://localhost').searchParams.get('hours') || '5';
+          const hours = parseInt(hoursParam, 10) || 5;
+          const script = `
+import json, glob, os
+from datetime import datetime, timedelta, timezone
+
+cutoff = (datetime.now(timezone.utc) - timedelta(hours=${hours})).isoformat()
+stats = {}
+
+for f in glob.glob(os.path.expanduser('~/.claude/projects/**/*.jsonl'), recursive=True):
+    try:
+        with open(f) as fh:
+            for line in fh:
+                d = json.loads(line)
+                ts = d.get('timestamp','')
+                if ts and ts < cutoff: continue
+                msg = d.get('message', {})
+                if not isinstance(msg, dict): continue
+                usage = msg.get('usage')
+                model = msg.get('model','')
+                if not usage or not model: continue
+                if model not in stats:
+                    stats[model] = {'input':0,'output':0,'cache_read':0,'cache_create':0}
+                stats[model]['input'] += usage.get('input_tokens',0)
+                stats[model]['output'] += usage.get('output_tokens',0)
+                stats[model]['cache_read'] += usage.get('cache_read_input_tokens',0)
+                stats[model]['cache_create'] += usage.get('cache_creation_input_tokens',0)
+    except: pass
+
+print(json.dumps({'hours': ${hours}, 'models': stats}))
+`;
+          const out = execSync(`python3 -c "${script.replace(/"/g, '\\"')}"`, { timeout: 15000 }).toString();
+          res.end(out);
+        } catch (e) {
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+    },
+  };
+}
 
 function alertDetailPlugin() {
   return {
@@ -58,7 +109,7 @@ function alertDetailPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), alertDetailPlugin()],
+  plugins: [react(), usagePlugin(), alertDetailPlugin()],
   server: {
     port: 8081,
     proxy: {
