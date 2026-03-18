@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import AlertModal from './AlertModal';
 
 const gridStyle = {
   display: 'grid',
@@ -120,6 +121,7 @@ function StatCard({ icon, label, desc, value, color, isLoading, onHide }) {
 
 export default function SummaryStats({ summary, isLoading }) {
   const [hidden, setHidden] = useState(loadHidden);
+  const [activeAlert, setActiveAlert] = useState(null);
 
   const hide = (key) => {
     const next = [...hidden, key];
@@ -167,12 +169,28 @@ export default function SummaryStats({ summary, isLoading }) {
       {summary?.alerts?.length > 0 && !isLoading && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
           {summary.alerts.map((a, i) => (
-            <span key={i} style={{ background: 'var(--orange-light, rgba(255,149,0,0.12))', border: '1px solid rgba(255,149,0,0.3)', borderRadius: 'var(--radius-sm)', padding: '4px 10px', fontSize: '12px', color: 'var(--orange, #ff9500)' }}>
+            <span
+              key={i}
+              onClick={() => setActiveAlert(a)}
+              title="點擊查看詳情"
+              style={{
+                background: 'var(--orange-light, rgba(255,149,0,0.12))',
+                border: '1px solid rgba(255,149,0,0.3)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '4px 10px', fontSize: '12px',
+                color: 'var(--orange, #ff9500)',
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,149,0,0.22)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--orange-light, rgba(255,149,0,0.12))'}
+            >
               {a}
             </span>
           ))}
         </div>
       )}
+      {activeAlert && <AlertModal alertText={activeAlert} onClose={() => setActiveAlert(null)} />}
       <div style={gridStyle}>
         {visible.map(({ key, label, icon, desc }) => (
           <StatCard
