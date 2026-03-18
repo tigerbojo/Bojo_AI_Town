@@ -72,7 +72,7 @@ function getRoleBadge(role) {
   const lower = role.toLowerCase();
   if (lower.includes('mayor') || lower.includes('市長')) return { label: '市長', cls: 'blue' };
   if (lower.includes('worker') || lower.includes('工人')) return { label: '工人', cls: 'green' };
-  if (lower.includes('refiner') || lower.includes('精煉')) return { label: '精煉廠', cls: 'purple' };
+  if (lower.includes('refiner') || lower.includes('精煉')) return { label: '整合員', cls: 'purple' };
   if (lower.includes('witness') || lower.includes('見證')) return { label: '見證者', cls: 'orange' };
   return { label: role, cls: 'gray' };
 }
