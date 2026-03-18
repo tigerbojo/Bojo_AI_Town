@@ -1,54 +1,59 @@
-/* Gas Town Design System — Dark Control Room */
+/* Gas Town Design System - Apple-style */
 
 :root {
-  --bg: #0c0c0e;
-  --bg-secondary: #1a1a1e;
-  --card: #131316;
-  --card-hover: #1c1c20;
+  --bg: #f5f5f7;
+  --bg-secondary: #e8e8ed;
+  --card: #ffffff;
+  --card-hover: #fafafa;
 
-  --blue: #3b82f6;
-  --blue-light: rgba(59,130,246,0.12);
-  --blue-dark: #2563eb;
+  --blue: #0071e3;
+  --blue-light: #e8f0fb;
+  --blue-dark: #005bb5;
 
-  --green: #22c55e;
-  --green-light: rgba(34,197,94,0.12);
-  --red: #ef4444;
-  --red-light: rgba(239,68,68,0.12);
-  --orange: #f97316;
-  --orange-light: rgba(249,115,22,0.12);
-  --yellow: #eab308;
-  --purple: #a855f7;
-  --purple-light: rgba(168,85,247,0.12);
+  --green: #28c840;
+  --green-light: #e6f9ea;
+  --red: #ff3b30;
+  --red-light: #fff0ef;
+  --orange: #ff9500;
+  --orange-light: #fff5e6;
+  --yellow: #ffcc00;
+  --purple: #af52de;
+  --purple-light: #f5eeff;
 
-  --text: #e4e4e8;
-  --text-secondary: #7c7c86;
-  --text-tertiary: #4a4a54;
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-tertiary: #aeaeb2;
 
-  --border: rgba(255,255,255,0.07);
-  --border-strong: rgba(255,255,255,0.12);
-  --divider: rgba(255,255,255,0.05);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --divider: rgba(0, 0, 0, 0.06);
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
 
-  --font: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', 'Helvetica Neue', sans-serif;
-  --font-mono: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  --font: -apple-system, BlinkMacSystemFont, 'Noto Sans TC', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
 
-  --transition: 0.18s ease;
-  --transition-fast: 0.1s ease;
-  --navbar-height: 48px;
+  --transition: 0.2s ease;
+  --transition-fast: 0.12s ease;
+
+  --navbar-height: 52px;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
 html {
-  font-size: 14px;
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -59,6 +64,7 @@ body {
   line-height: 1.5;
 }
 
+/* Utility classes */
 .card {
   background: var(--card);
   border-radius: var(--radius-md);
@@ -70,58 +76,94 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 100px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
-.badge.green  { background: var(--green-light);  color: #4ade80; }
-.badge.red    { background: var(--red-light);    color: #f87171; }
-.badge.blue   { background: var(--blue-light);   color: #60a5fa; }
-.badge.orange { background: var(--orange-light); color: #fb923c; }
-.badge.purple { background: var(--purple-light); color: #c084fc; }
-.badge.gray   { background: rgba(255,255,255,0.06); color: var(--text-secondary); }
+.badge.green {
+  background: var(--green-light);
+  color: #1a7a2a;
+}
+
+.badge.red {
+  background: var(--red-light);
+  color: #c0392b;
+}
+
+.badge.blue {
+  background: var(--blue-light);
+  color: var(--blue-dark);
+}
+
+.badge.orange {
+  background: var(--orange-light);
+  color: #a05c00;
+}
+
+.badge.purple {
+  background: var(--purple-light);
+  color: #7b2fbe;
+}
+
+.badge.gray {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
 
 .dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
 }
 
-.dot.green  { background: var(--green); }
-.dot.red    { background: var(--red); }
+.dot.green { background: var(--green); }
+.dot.red { background: var(--red); }
 .dot.orange { background: var(--orange); }
 .dot.yellow { background: var(--yellow); }
-.dot.gray   { background: var(--text-tertiary); }
-.dot.blue   { background: var(--blue); }
+.dot.gray { background: var(--text-tertiary); }
+.dot.blue { background: var(--blue); }
 
+/* Pulsing dot for live status */
 .dot.pulse {
+  box-shadow: 0 0 0 0 currentColor;
   animation: pulse-ring 2s ease-out infinite;
 }
 
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
-  70%  { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
-  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+  0% { box-shadow: 0 0 0 0 rgba(40, 200, 64, 0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(40, 200, 64, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(40, 200, 64, 0); }
 }
 
-@keyframes live-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+/* Section headings */
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 16px 0;
+  letter-spacing: -0.01em;
 }
 
+.section-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Skeleton loading */
 .skeleton {
-  background: linear-gradient(90deg, #1e1e22 25%, #252528 50%, #1e1e22 75%);
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, #e0e0e5 50%, var(--bg-secondary) 75%);
   background-size: 200% 100%;
   animation: skeleton-wave 1.6s ease-in-out infinite;
   border-radius: var(--radius-sm);
 }
 
 @keyframes skeleton-wave {
-  0%   { background-position: 200% 0; }
+  0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
