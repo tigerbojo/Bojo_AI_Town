@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -20,6 +20,33 @@ function usagePlugin() {
         } catch (e) {
           res.end(JSON.stringify({ error: e.message }));
         }
+      });
+    },
+  };
+}
+
+function claudeUsagePlugin() {
+  return {
+    name: 'claude-usage',
+    configureServer(server) {
+      server.middlewares.use('/claude-usage', (req, res) => {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Transfer-Encoding', 'chunked');
+
+        const claudePath = (() => {
+          try { return execSync('which claude', { timeout: 3000 }).toString().trim(); } catch { return 'claude'; }
+        })();
+
+        const child = spawn(claudePath, ['--print', '/usage'], {
+          cwd: '/tmp',
+          env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin' },
+        });
+
+        child.stdout.on('data', d => res.write(d));
+        child.stderr.on('data', d => res.write(d));
+        child.on('close', () => res.end());
+
+        res.on('close', () => child.kill());
       });
     },
   };
@@ -81,7 +108,7 @@ function alertDetailPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), usagePlugin(), alertDetailPlugin()],
+  plugins: [react(), usagePlugin(), claudeUsagePlugin(), alertDetailPlugin()],
   server: {
     port: 8081,
     proxy: {

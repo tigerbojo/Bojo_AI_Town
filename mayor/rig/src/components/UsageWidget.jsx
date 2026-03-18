@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 const MAX_COST_PER_WINDOW = 50; // Claude Max ~$50/5h window (adjust if needed)
@@ -42,10 +42,54 @@ function ProgressBar({ value, max, color }) {
   );
 }
 
+
+function UsageModal({ onClose }) {
+  const [text, setText] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch('/claude-usage', { signal: ctrl.signal })
+      .then(r => r.text())
+      .then(t => { setText(t); setLoading(false); })
+      .catch(() => { setText('查詢失敗，請確認 claude CLI 已安裝'); setLoading(false); });
+    return () => ctrl.abort();
+  }, []);
+
+  useEffect(() => {
+    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 16px)', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '560px', maxWidth: '90vw', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '15px', fontWeight: '600' }}>📊 /usage</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--text-secondary)', padding: '2px 6px' }}>×</button>
+        </div>
+        <div style={{ padding: '16px 20px 20px' }}>
+          {loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '14px', borderRadius: '4px' }} />)}
+              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '8px' }}>正在查詢，需要幾秒鐘…</p>
+            </div>
+          ) : (
+            <pre style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.6 }}>{text}</pre>
+          )}
+          <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '12px', marginBottom: 0 }}>按 Esc 或點空白處關閉</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UsageWidget() {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('gt-usage-collapsed') === 'true'
   );
+  const [showModal, setShowModal] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['usage-blocks'],
@@ -135,6 +179,7 @@ export default function UsageWidget() {
                 )}
 
                 <div style={{ marginTop: '10px', textAlign: 'right' }}>
+                  <button onClick={() => setShowModal(true)} style={{ fontSize: '12px', fontWeight: '600', color: 'var(--blue)', background: 'var(--blue-light)', border: '1px solid rgba(0,113,227,0.2)', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer' }}>查詢用量</button>
                   <button onClick={() => refetch()} style={{ fontSize: '11px', color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}>↻ 更新</button>
                 </div>
               </>
@@ -142,6 +187,7 @@ export default function UsageWidget() {
           </div>
         )}
       </div>
+      {showModal && <UsageModal onClose={() => setShowModal(false)} />}
     </section>
   );
 }
