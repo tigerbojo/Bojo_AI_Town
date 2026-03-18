@@ -61,7 +61,7 @@ function getColor(key, value) {
 const STAT_CONFIG = [
   { key: 'polecats',    label: '工人數',  icon: '👷', desc: '已連線的工人 session 數（含 idle）' },
   { key: 'hooks',       label: '掛鉤',    icon: '🔗', desc: '已掛號等待被認領的任務數，stale = 超時未處理' },
-  { key: 'work',        label: '待執行',  icon: '📋', desc: '已指派給 deacon 的清理任務數，非 polecat 工作量' },
+  { key: 'work',        label: '待執行',  icon: '📋', desc: '已指派給管家的清理任務數，非 polecat 工作量' },
   { key: 'convoys',     label: '車隊',    icon: '🚛', desc: '跨 rig 批次任務車隊數' },
   { key: 'escalations', label: '升級事項', icon: '⚡️', desc: '已升級、需要 mayor 介入的待處理事項' },
   { key: 'alerts',      label: '警報',    icon: '🚨', desc: '系統目前的警示訊息數' },
