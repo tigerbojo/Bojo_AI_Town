@@ -1,7 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-
-const MAX_COST_PER_WINDOW = 50; // Claude Max ~$50/5h window (adjust if needed)
 
 function fmt(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -9,77 +7,49 @@ function fmt(n) {
   return String(n);
 }
 
-function fmtTime(iso) {
+function fmtTime(iso, tz = 'Asia/Taipei') {
   if (!iso) return '—';
-  return new Date(iso).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+}
+
+function fmtDate(iso, tz = 'Asia/Taipei') {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', timeZone: tz });
 }
 
 function Countdown({ endTime }) {
-  const [remaining, setRemaining] = useState('');
+  const [txt, setTxt] = useState('');
   useEffect(() => {
     const update = () => {
-      const diff = new Date(endTime) - new Date();
-      if (diff <= 0) { setRemaining('已重置'); return; }
+      const diff = new Date(endTime) - Date.now();
+      if (diff <= 0) { setTxt('已重置'); return; }
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
-      setRemaining(h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`);
+      setTxt(h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`);
     };
     update();
     const t = setInterval(update, 1000);
     return () => clearInterval(t);
   }, [endTime]);
-  return <span>{remaining}</span>;
+  return <span>{txt}</span>;
 }
 
-function ProgressBar({ value, max, color }) {
-  const pct = Math.min(100, max > 0 ? (value / max) * 100 : 0);
-  const barColor = pct > 80 ? '#ff3b30' : pct > 60 ? '#ff9500' : color || '#0071e3';
+function UsageRow({ label, cost, resetLabel, color = '#0071e3', maxCost }) {
+  const pct = maxCost > 0 ? Math.min(100, (cost / maxCost) * 100) : 0;
+  const barColor = pct > 80 ? '#ff3b30' : pct > 60 ? '#ff9500' : color;
   return (
-    <div style={{ height: '8px', borderRadius: '4px', background: 'var(--border)', overflow: 'hidden', position: 'relative' }}>
-      <div style={{ height: '100%', width: pct + '%', background: barColor, borderRadius: '4px', transition: 'width 0.5s ease' }} />
-    </div>
-  );
-}
-
-
-function UsageModal({ onClose }) {
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    fetch('/claude-usage', { signal: ctrl.signal })
-      .then(r => r.text())
-      .then(t => { setText(t); setLoading(false); })
-      .catch(() => { setText('查詢失敗，請確認 claude CLI 已安裝'); setLoading(false); });
-    return () => ctrl.abort();
-  }, []);
-
-  useEffect(() => {
-    const h = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
-
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg, 16px)', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '560px', maxWidth: '90vw', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '15px', fontWeight: '600' }}>📊 /usage</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: 'var(--text-secondary)', padding: '2px 6px' }}>×</button>
-        </div>
-        <div style={{ padding: '16px 20px 20px' }}>
-          {loading ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '14px', borderRadius: '4px' }} />)}
-              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '8px' }}>正在查詢，需要幾秒鐘…</p>
-            </div>
-          ) : (
-            <pre style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text)', whiteSpace: 'pre-wrap', margin: 0, lineHeight: 1.6 }}>{text}</pre>
-          )}
-          <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '12px', marginBottom: 0 }}>按 Esc 或點空白處關閉</p>
-        </div>
+    <div style={{ marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
+        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>{label}</span>
+        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{resetLabel}</span>
+      </div>
+      <div style={{ height: '6px', borderRadius: '3px', background: 'var(--border)', overflow: 'hidden', marginBottom: '4px' }}>
+        <div style={{ height: '100%', width: (maxCost > 0 ? pct : 100) + '%', background: barColor, borderRadius: '3px', transition: 'width 0.5s ease' }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: '600', color: 'var(--text-secondary)', fontSize: '13px' }}>${cost.toFixed(2)}</span>
+        {maxCost > 0 && <span>{pct.toFixed(0)}% 已用</span>}
       </div>
     </div>
   );
@@ -89,7 +59,6 @@ export default function UsageWidget() {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('gt-usage-collapsed') === 'true'
   );
-  const [showModal, setShowModal] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['usage-blocks'],
@@ -105,10 +74,23 @@ export default function UsageWidget() {
   };
 
   const activeBlock = data?.blocks?.find(b => b.isActive && !b.isGap);
-  const cost = activeBlock?.costUSD ?? 0;
-  const pct = Math.min(100, (cost / MAX_COST_PER_WINDOW) * 100);
+  const thisWeek = data?.weekly?.[data.weekly.length - 1];
+  const sonnetWeek = thisWeek?.modelBreakdowns?.find(m => m.modelName.includes('sonnet'));
+  const sessionCost = activeBlock?.costUSD ?? 0;
+  const weekCost = thisWeek?.totalCost ?? 0;
+  const sonnetCost = sonnetWeek?.cost ?? 0;
   const burnRate = activeBlock?.burnRate?.costPerHour;
-  const models = activeBlock?.models ?? [];
+
+  // Week resets every Sunday — compute next Sunday midnight Taipei
+  const nextWeekReset = (() => {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun
+    const daysUntilSun = day === 0 ? 7 : 7 - day;
+    const next = new Date(now);
+    next.setDate(now.getDate() + daysUntilSun);
+    next.setHours(0, 0, 0, 0);
+    return next.toISOString();
+  })();
 
   return (
     <section>
@@ -118,9 +100,9 @@ export default function UsageWidget() {
           <span style={{ fontSize: '18px' }}>📊</span>
           <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', margin: 0, letterSpacing: '-0.01em' }}>Claude Code 用量</h2>
-            {activeBlock && !collapsed && (
+            {!collapsed && activeBlock && (
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                ${cost.toFixed(2)} 已用　·　重置：<Countdown endTime={activeBlock.endTime} />
+                本視窗 ${sessionCost.toFixed(2)}　·　{burnRate ? `$${burnRate.toFixed(1)}/h` : ''}　·　重置 <Countdown endTime={activeBlock.endTime} />
               </p>
             )}
           </div>
@@ -128,58 +110,54 @@ export default function UsageWidget() {
         </div>
 
         {!collapsed && (
-          <div style={{ padding: '16px 20px 18px' }}>
-            {isLoading && <div className="skeleton" style={{ height: '60px', borderRadius: '8px' }} />}
+          <div style={{ padding: '18px 20px 16px' }}>
+            {isLoading && [1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '44px', borderRadius: '6px', marginBottom: '12px' }} />)}
 
             {!isLoading && data?.error && (
               <p style={{ fontSize: '13px', color: 'var(--red, #ff3b30)' }}>錯誤：{data.error}</p>
             )}
 
-            {!isLoading && !activeBlock && !data?.error && (
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', padding: '16px 0' }}>目前無活躍計費視窗</p>
-            )}
-
-            {!isLoading && activeBlock && (
+            {!isLoading && !data?.error && (
               <>
-                {/* Main progress bar */}
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.03em', color: pct > 80 ? '#ff3b30' : pct > 60 ? '#ff9500' : 'var(--text)' }}>
-                      ${cost.toFixed(2)}
-                    </span>
-                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>/ ~${MAX_COST_PER_WINDOW}</span>
-                  </div>
-                  <ProgressBar value={cost} max={MAX_COST_PER_WINDOW} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                    <span>{fmtTime(activeBlock.startTime)} 開始</span>
-                    <span style={{ color: pct > 80 ? '#ff3b30' : 'inherit' }}>{pct.toFixed(0)}% 已用</span>
-                    <span>重置 {fmtTime(activeBlock.endTime)}</span>
-                  </div>
-                </div>
+                {/* Current session (5h block) */}
+                <UsageRow
+                  label="本計費視窗（5 小時）"
+                  cost={sessionCost}
+                  resetLabel={activeBlock ? `重置 ${fmtTime(activeBlock.endTime)}` : '無活躍視窗'}
+                  color="#0071e3"
+                  maxCost={0}
+                />
 
-                {/* Stats row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '14px' }}>
-                  {[
-                    { label: '輸出 Token', value: fmt(activeBlock.tokenCounts.outputTokens) },
-                    { label: '燒錢速率', value: burnRate ? `$${burnRate.toFixed(2)}/h` : '—' },
-                    { label: '倒數重置', value: <Countdown endTime={activeBlock.endTime} /> },
-                  ].map(({ label, value }) => (
-                    <div key={label} style={{ background: 'var(--bg)', borderRadius: '8px', padding: '10px 12px', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginBottom: '3px' }}>{label}</div>
-                      <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)' }}>{value}</div>
-                    </div>
-                  ))}
-                </div>
+                {/* Current week all models */}
+                <UsageRow
+                  label="本週（所有模型）"
+                  cost={weekCost}
+                  resetLabel={`重置 ${fmtDate(nextWeekReset)} 00:00`}
+                  color="#9333ea"
+                  maxCost={0}
+                />
 
-                {/* Models */}
-                {models.length > 0 && (
-                  <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                    使用模型：{models.map(m => m.replace('claude-', '').replace('-20251001', '')).join('、')}
+                {/* Current week Sonnet only */}
+                <UsageRow
+                  label="本週（Sonnet）"
+                  cost={sonnetCost}
+                  resetLabel={weekCost > 0 ? `佔本週 ${(sonnetCost/weekCost*100).toFixed(0)}%` : ''}
+                  color="#16a34a"
+                  maxCost={weekCost}
+                />
+
+                {/* Model breakdown */}
+                {thisWeek?.modelBreakdowns?.length > 0 && (
+                  <div style={{ marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {thisWeek.modelBreakdowns.map(m => (
+                      <span key={m.modelName} style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                        {m.modelName.replace('claude-','').replace('-20251001','')}　${m.cost.toFixed(2)}
+                      </span>
+                    ))}
                   </div>
                 )}
 
-                <div style={{ marginTop: '10px', textAlign: 'right' }}>
-                  <button onClick={() => setShowModal(true)} style={{ fontSize: '12px', fontWeight: '600', color: 'var(--blue)', background: 'var(--blue-light)', border: '1px solid rgba(0,113,227,0.2)', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer' }}>查詢用量</button>
+                <div style={{ marginTop: '12px', textAlign: 'right' }}>
                   <button onClick={() => refetch()} style={{ fontSize: '11px', color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}>↻ 更新</button>
                 </div>
               </>
@@ -187,7 +165,6 @@ export default function UsageWidget() {
           </div>
         )}
       </div>
-      {showModal && <UsageModal onClose={() => setShowModal(false)} />}
     </section>
   );
 }

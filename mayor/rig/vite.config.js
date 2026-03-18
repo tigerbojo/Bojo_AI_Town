@@ -12,11 +12,10 @@ function usagePlugin() {
       server.middlewares.use('/usage-data', (req, res) => {
         res.setHeader('Content-Type', 'application/json');
         try {
-          const out = execSync('npx ccusage@latest blocks --json --offline 2>/dev/null', {
-            timeout: 15000,
-            env: { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin' },
-          }).toString();
-          res.end(out);
+          const env = { ...process.env, PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin' };
+          const blocks = JSON.parse(execSync('npx ccusage@latest blocks --json --offline 2>/dev/null', { timeout: 15000, env }).toString());
+          const weekly = JSON.parse(execSync('npx ccusage@latest weekly --json --offline 2>/dev/null', { timeout: 15000, env }).toString());
+          res.end(JSON.stringify({ blocks: blocks.blocks, weekly: weekly.weekly }));
         } catch (e) {
           res.end(JSON.stringify({ error: e.message }));
         }
