@@ -60,7 +60,7 @@ function getTypeBadge(type) {
   const lower = type.toLowerCase();
   if (lower === 'polecat' || lower.includes('worker') || lower.includes('工人')) return { label: '工人', cls: 'blue' };
   if (lower === 'refinery' || lower.includes('refiner') || lower.includes('精煉')) return { label: '整合員', cls: 'purple' };
-  if (lower === 'witness' || lower.includes('見證')) return { label: '見證者', cls: 'orange' };
+  if (lower === 'witness' || lower.includes('見證')) return { label: '監察員', cls: 'orange' };
   if (lower === 'mayor' || lower.includes('市長')) return { label: '市長', cls: 'green' };
   if (lower === 'deacon' || lower.includes('執事')) return { label: '管家', cls: 'gray' };
   return { label: type, cls: 'gray' };
