@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const cardStyle = {
   background: 'var(--card)',
   borderRadius: 'var(--radius-md)',
@@ -78,24 +80,38 @@ function getRoleBadge(role) {
 }
 
 export default function SessionsPanel({ sessions, isLoading }) {
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem('gt-sessions-collapsed') === 'true'
+  );
+
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('gt-sessions-collapsed', String(next));
+  };
+
   return (
     <section>
       <div style={cardStyle}>
-        <div style={headerStyle}>
+        <div
+          style={{ ...headerStyle, cursor: 'pointer', userSelect: 'none' }}
+          onClick={toggle}
+        >
           <span style={{ fontSize: '18px' }}>🖥</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', margin: 0, letterSpacing: '-0.01em' }}>
               會話列表
             </h2>
             {!isLoading && sessions != null && (
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                共 {sessions.length} 個工作階段
+                共 {sessions.length} 個工作階段（整合員＋監察員常駐）
               </p>
             )}
           </div>
+          <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', transition: 'transform 0.2s', display: 'inline-block', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        {!collapsed && <div style={{ overflowX: 'auto' }}>
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -144,7 +160,7 @@ export default function SessionsPanel({ sessions, isLoading }) {
               )}
             </tbody>
           </table>
-        </div>
+        </div>}
       </div>
     </section>
   );
