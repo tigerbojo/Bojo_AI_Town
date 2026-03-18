@@ -32,7 +32,7 @@ const mainStyle = {
   gap: '24px',
 };
 
-export default function Layout({ children, lastUpdated }) {
+export default function Layout({ children, lastUpdated, onRefresh, isLoading }) {
   const formatTime = (iso) => {
     if (!iso) return null;
     try {
@@ -50,11 +50,34 @@ export default function Layout({ children, lastUpdated }) {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font)' }}>
       <nav style={navbarStyle}>
         <h1 style={titleStyle}>🏙 氣站控制中心</h1>
-        {lastUpdated && (
-          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            更新：{formatTime(lastUpdated)}
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {lastUpdated && (
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              更新：{formatTime(lastUpdated)}
+            </span>
+          )}
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            title="立即更新"
+            style={{
+              background: 'none',
+              border: '1px solid rgba(0,0,0,0.12)',
+              borderRadius: '8px',
+              padding: '5px 12px',
+              fontSize: '13px',
+              color: isLoading ? '#aaa' : '#1d1d1f',
+              cursor: isLoading ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', gap: '5px',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => { if (!isLoading) e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+          >
+            <span style={{ display: 'inline-block', animation: isLoading ? 'spin 0.8s linear infinite' : 'none' }}>↻</span>
+            更新
+          </button>
+        </div>
       </nav>
       <main style={mainStyle}>
         {children}

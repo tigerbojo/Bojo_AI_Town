@@ -20,7 +20,7 @@ const errorBannerStyle = {
 };
 
 export default function App() {
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['dashboard'],
     queryFn: fetchDashboardData,
     refetchInterval: 15_000,
@@ -29,7 +29,7 @@ export default function App() {
   });
 
   return (
-    <Layout lastUpdated={data?.fetchedAt}>
+    <Layout lastUpdated={data?.fetchedAt} onRefresh={refetch} isLoading={isLoading}>
       {isError && (
         <div style={errorBannerStyle}>
           <span style={{ fontSize: '18px' }}>⚠️</span>
